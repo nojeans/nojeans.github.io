@@ -1,0 +1,48 @@
+name: Manual Deploy
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Where to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Choose deploy path
+        run: |
+          if [ "${{ github.event.inputs.target }}" = "prod" ]; then
+            echo "DEPLOY_PATH=${{ secrets.PROD_PATH }}" >> $GITHUB_ENV
+          else
+            echo "DEPLOY_PATH=${{ secrets.DEV_PATH }}" >> $GITHUB_ENV
+          fi
+
+      - name: Deploy files via rsync
+        run: |
+          rsync -avz --delete \
+            --exclude=".git" \
+            --exclude=".github" \
+            ./ \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ env.DEPLOY_PATH }}
+
+      - name: Finish
+        run: |
+          echo "Deploy finished"
