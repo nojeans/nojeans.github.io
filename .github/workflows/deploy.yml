@@ -36,21 +36,32 @@ jobs:
             echo "DEPLOY_PATH=${{ secrets.DEV_DEPLOY_PATH }}" >> $GITHUB_ENV
           fi
 
+      - name: Debug SSH_PORT
+        run: |
+          if [ -z "${{ secrets.SSH_PORT }}" ]; then
+            echo "SSH_PORT is EMPTY"
+            exit 1
+          else
+            echo "SSH_PORT is SET"
+          fi
+
       - name: Test SSH connection
         run: |
-          ssh -i ~/.ssh/id_ed25519 \
-              -p ${{ secrets.SSH_PORT }} \
-              -o StrictHostKeyChecking=no \
-              -o UserKnownHostsFile=/dev/null \
-              -o ConnectTimeout=15 \
-              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-              "echo 'SSH OK: $(hostname)'"
+          ssh \
+            -i ~/.ssh/id_ed25519 \
+            -p "${{ secrets.SSH_PORT }}" \
+            -o StrictHostKeyChecking=no \
+            -o UserKnownHostsFile=/dev/null \
+            -o ConnectTimeout=15 \
+            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
+            "echo 'SSH OK: $(hostname)'"
+
 
       - name: Deploy files
         run: |
           rsync -avz --delete \
-            -e "ssh -i ~/.ssh/id_ed25519 -p ${{ secrets.SSH_PORT }} -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+            -e "ssh -i ~/.ssh/id_ed25519 -p '${{ secrets.SSH_PORT }}' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
             --exclude='.git' \
             ./ \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:${{ env.DEPLOY_PATH }}
-
+ 
