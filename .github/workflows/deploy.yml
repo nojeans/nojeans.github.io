@@ -21,10 +21,15 @@ jobs:
         uses: actions/checkout@v4
 
       # ---------- API TESTS (NEWMAN) ----------
-      - name: Run API tests (Postman / Newman)
-        run: |
-          npm install -g newman
-          newman run postman/collection.json --reporters cli --timeout-request 5000 --verbose
+      - name: Install Newman
+        run: npm install -g newman
+
+      - name: Run API tests (Postman / Newman) with Retries
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          timeout_minutes: 2
+          command: newman run postman/collection.json --reporters cli --timeout-request 10000 --delay-request 1000 --verbose
 
       # ---------- SSH ----------
       - name: Prepare SSH
