@@ -58,10 +58,12 @@ jobs:
 
 
       - name: Deploy files
+        env:
+           DEPLOY_PATH: ${{ github.event.inputs.target == 'prod' && secrets.PROD_DEPLOY_PATH || secrets.DEV_DEPLOY_PATH }}
         run: |
-           echo "Deploying to: [${{ env.DEPLOY_PATH }}]"
+           echo "Deploying to: [${DEPLOY_PATH}]"
              rsync -avz \
               -e "ssh -i ~/.ssh/id_ed25519 -p '${{ secrets.SSH_PORT }}' -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
               --exclude='.git' \
               ./ \
-              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:"${{ env.DEPLOY_PATH }}/"
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:"${DEPLOY_PATH}/"
