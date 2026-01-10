@@ -4,20 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Викторинатор</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- Yandex.Metrika counter -->
-<script type="text/javascript">
-    (function(m,e,t,r,i,k,a){
-        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
-        m[i].l=1*new Date();
-        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
-        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=105927136', 'ym');
 
-    ym(105927136, 'init', {ssr:true, webvisor:true, clickmap:true, accurateTrackBounce:true, trackLinks:true});
-</script>
-<noscript><div><img src="https://mc.yandex.ru/watch/105927136" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
-<!-- /Yandex.Metrika counter -->
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -25,7 +13,7 @@
 <button id="settingsBtn" class="settings-btn" title="Настройки категорий">⚙️</button>
 
 <!-- Затемнение + попап -->
-<div id="settingsOverlay" class="settings-overlay">
+<div id="settingsOverlay" class="settings-overlay" hidden>
     <div class="settings-modal">
         <h2>Выбор категорий</h2>
 
@@ -39,8 +27,8 @@
             <label class="category-item"><input type="checkbox" value="7" checked> 7. SQL и Agile</label>
             <label class="category-item"><input type="checkbox" value="8" checked> 8. HTML, CSS, Charles, TCP/IP</label>
             <label class="category-item"><input type="checkbox" value="9" checked> 9. Apache Kafka, Git и Linux</label>
-            <label class="category-item"><input type="checkbox" value="9" checked> 10. CI/CD и жизненный цикл разработки</label>
-            <label class="category-item"><input type="checkbox" value="9" checked> 11. Тестирование мобильных приложений</label>
+            <label class="category-item"><input type="checkbox" value="10" checked> 10. CI/CD и жизненный цикл разработки</label>
+            <label class="category-item"><input type="checkbox" value="11" checked> 11. Тестирование мобильных приложений</label>
         </div>
 
         <div class="settings-actions">
@@ -63,7 +51,7 @@
     <div id="answer"></div>
 </div>
 
-<div class="site-version">Версия 0.8</div>
+<div class="site-version">Версия 0.10</div>
 
 <script>
 const spinBtn = document.getElementById('spinBtn');
@@ -81,7 +69,10 @@ const closeBtn = document.getElementById('closeModal');
 let currentData = null;
 
 function escapeHtml(text) {
-    return text.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    return text
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;");
 }
 
 function getCategoriesFromQuery() {
@@ -91,26 +82,36 @@ function getCategoriesFromQuery() {
 }
 
 function updateQuery(categories) {
-    const p = new URLSearchParams(window.location.search);
-    categories.length ? p.set('categories', categories.join(',')) : p.delete('categories');
+    const p = new URLSearchParams();
+    if (categories.length) {
+        p.set('categories', categories.join(','));
+    }
     history.replaceState({}, '', location.pathname + (p.toString() ? '?' + p : ''));
 }
 
 /* ===== НАСТРОЙКИ ===== */
 settingsBtn.onclick = () => {
-    settingsOverlay.style.display = 'flex';
+    settingsOverlay.hidden = false;
+    settingsOverlay.classList.add('open');
+
     const selected = getCategoriesFromQuery();
     document.querySelectorAll('.category-item input').forEach(cb => {
         cb.checked = selected.length === 0 || selected.includes(cb.value);
     });
 };
 
-closeBtn.onclick = () => settingsOverlay.style.display = 'none';
+closeBtn.onclick = () => {
+    settingsOverlay.classList.remove('open');
+    settingsOverlay.hidden = true;
+};
 
 applyBtn.onclick = () => {
-    const selected = [...document.querySelectorAll('.category-item input:checked')].map(cb => cb.value);
+    const selected = [...document.querySelectorAll('.category-item input:checked')]
+        .map(cb => cb.value);
+
     updateQuery(selected);
-    settingsOverlay.style.display = 'none';
+    settingsOverlay.classList.remove('open');
+    settingsOverlay.hidden = true;
 };
 
 /* ===== ВИКТОРИНА ===== */
@@ -120,27 +121,31 @@ spinBtn.onclick = () => {
     answerEl.textContent = '';
     showAnswerBtn.style.display = 'none';
 
-    const url = 'get_question.php' + location.search;
-
-    fetch(url)
+    fetch('get_question.php' + location.search)
         .then(r => r.json())
         .then(data => {
-            if (data.error) return categoryEl.textContent = data.error;
+            if (data.error) {
+                categoryEl.textContent = data.error;
+                return;
+            }
 
             currentData = data;
             let t = 3;
             timerEl.textContent = t;
 
             const i = setInterval(() => {
-                if (--t > 0) timerEl.textContent = t;
-                else {
+                if (--t > 0) {
+                    timerEl.textContent = t;
+                } else {
                     clearInterval(i);
                     timerEl.textContent = '';
                     categoryEl.textContent = 'Категория: ' + data.category;
                     questionEl.textContent = data.question;
                     showAnswerBtn.style.display = 'inline-block';
                     showAnswerBtn.onclick = () => {
-                        answerEl.innerHTML = data.answer.map(a => '• ' + escapeHtml(a)).join('<br>');
+                        answerEl.innerHTML = data.answer
+                            .map(a => '• ' + escapeHtml(a))
+                            .join('<br>');
                     };
                 }
             }, 1000);
