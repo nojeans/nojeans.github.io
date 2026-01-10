@@ -46,7 +46,7 @@ jobs:
           fi
           echo "Deploying to: $DEPLOY_PATH"
 
-      # ---------- SSH TEST (RETRY x6, IPv4 FORCED) ----------
+      # ---------- SSH TEST (RETRY x1, IPv4 FORCED) ----------
       - name: Test SSH connection (retry)
         run: |
           for i in 1; do
@@ -72,10 +72,10 @@ jobs:
             fi
           done
 
-      # ---------- DEPLOY (RETRY x6, SAFE MODE, IPv4 FORCED) ----------
+      # ---------- DEPLOY (RETRY x1, SAFE MODE, IPv4 FORCED) ----------
       - name: Deploy files (safe mode, retry, no delete)
         run: |
-          for i in 1 2 3 4 5 6; do
+          for i in 1; do
             echo "Deploy attempt $i..."
 
             rsync -avz \
